@@ -35,6 +35,15 @@
 // Print button press to serial and set a flag.
 #define BTN_TEST_PRINT(cond, btn, flag) if (cond) { Serial.println(btn); flag=1; }
 
+// Send a signal for a button read from a given pin
+#define SEND_PIND_BTN( pin ) do{ *rawDataPtr = PIND_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
+#define SEND_PINB_BTN( pin ) do{ *rawDataPtr = PINB_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
+#define SEND_PINC_BTN( pin ) do{ *rawDataPtr = PINC_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
+
+// Send a signal for a button that doesn't exist (the SNES has 4, all set to HIGH)
+#define SEND_UNUSED_BTN( val )   do{ *rawDataPtr++ = 0; PINC_WRITE(0, val); } while(false)
+
+
 // Used as part of the input test
 int tempVar = 0;
 
@@ -65,7 +74,6 @@ unsigned char rawData[ 128 ];
 
 
 
-
 void setup()
 {
    DDRD = B00000010; // Digital 0 to 7
@@ -73,15 +81,6 @@ void setup()
    DDRC = B00000001; // Analog 0 to 5
 
    Serial.begin( 115200 );
-}
-
-
-inline void sendRawData( unsigned char first, unsigned char count )
-{
-    for( unsigned char i = first ; i < first + count ; i++ ) {
-        Serial.write( rawData[i] ? ONE : ZERO );
-    }
-    Serial.write( SPLIT );
 }
 
 inline void loop_INPUTTEST()
@@ -142,151 +141,66 @@ inline void loop_SNES()
   // Now there are 16 clock pulses
   // Controller writes data on the rising edge, and SNES samples on the falling
   // Buttons are low-active, which matches the UD-USB
+  // Note: I've intentionally left this loop unrolled.
 
-  // Note: The very first button is driven at the falling edge of latch
+  // The very first button is driven at the falling edge of latch
   // Button: B
-  *rawDataPtr = !PINB_READ(3);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINB_BTN(3);
 
   // Next buttons wait for rising edge of clock.
   // Button: Y
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PINB_READ(0);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINB_BTN(0);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Select
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(3);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(3);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Start
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(2);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(2);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Up
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(7);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(7);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Down
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(6);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(6);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Left
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(5);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(5);
 
-  // Next buttons wait for rising edge of clock.
   // Button: Right
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PIND_READ(4);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PIND_BTN(4);
 
-  // Next buttons wait for rising edge of clock.
   // Button: A
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PINB_READ(4);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINB_BTN(4);
 
-  // Next buttons wait for rising edge of clock.
   // Button: X
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PINB_READ(1);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINB_BTN(1);
 
-  // Next buttons wait for rising edge of clock.
   // Button: L
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PINC_READ(4);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINC_BTN(4);
 
-  // Next buttons wait for rising edge of clock.
   // Button: R
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr = !PINB_READ(2);
-  if (*rawDataPtr==HIGH) {
-    PINC_WRITE(0, LOW);
-  } else {
-    PINC_WRITE(0, HIGH);
-  }
-  rawDataPtr++;
+  SEND_PINB_BTN(2);
 
   // Not used (always high)
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr++ = 0;
-  PINC_WRITE(0, HIGH);
+  SEND_UNUSED_BTN( HIGH );
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr++ = 0;
-  PINC_WRITE(0, HIGH);
+  SEND_UNUSED_BTN( HIGH );
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr++ = 0;
-  PINC_WRITE(0, HIGH);
+  SEND_UNUSED_BTN( HIGH );
   WAIT_RISING_EDGE_PINC( 2 );
-  *rawDataPtr++ = 0;
-  PINC_WRITE(0, HIGH);
+  SEND_UNUSED_BTN( HIGH );
 
   // Done; drive serial pin low until next cycle.
   PINC_WRITE(0, LOW);
@@ -294,7 +208,10 @@ inline void loop_SNES()
   interrupts();
 
   // Update NintendoSpy
-  sendRawData( 0 , SNES_BITCOUNT );
+  for(unsigned char i=0; i<SNES_BITCOUNT; i++) {
+    Serial.write( rawData[i] ? ZERO : ONE );
+  }
+  Serial.write( SPLIT );
 }
 
 void loop()
