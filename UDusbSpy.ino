@@ -7,6 +7,14 @@
 // You must disable this if you want "normal" operation.
 //#define MODE_INPUT_TEST
 
+// How many bits does the SNES expect to be shifted?
+#define SNES_BITCOUNT  16
+
+// Handy defines from NintendoSpy
+#define ZERO  '\0'  // Use a byte value of 0x00 to represent a bit with value 0.
+#define ONE    '1'  // Use an ASCII one to represent a bit with value 1.  This makes Arduino debugging easier.
+#define SPLIT '\n'  // Use a new-line character to split up the controller state packets.
+
 // Read from a register (reg) and pin (pin) 
 #define PIN_READ( reg, pin ) (reg&(1<<(pin)))
 
@@ -18,13 +26,12 @@
 #define WAIT_FALLING_EDGE( reg, pin ) while( !PIN_READ(reg, pin) ); while(  PIN_READ(reg, pin) );
 #define WAIT_RISING_EDGE(  reg, pin ) while(  PIN_READ(reg, pin) ); while( !PIN_READ(reg, pin) );
 
-// How many bits does the SNES expect to be shifted?
-#define SNES_BITCOUNT  16
+// Perform a pin read into a variable. Inverts, since SNES and UD-USB are both low-active.
+#define READ_PIN_TO_VAR( var, reg, pin ) var = !PIN_READ(reg, pin);
 
-// Handy defines from NintendoSpy
-#define ZERO  '\0'  // Use a byte value of 0x00 to represent a bit with value 0.
-#define ONE    '1'  // Use an ASCII one to represent a bit with value 1.  This makes Arduino debugging easier.
-#define SPLIT '\n'  // Use a new-line character to split up the controller state packets.
+// Print button press to serial and set a flag.
+#define BTN_TEST_PRINT(cond, btn, flag) if (cond) { Serial.println(btn); flag=1; }
+
 
 // Used as part of the input test
 int tempVar = 0;
@@ -71,91 +78,46 @@ inline void loop_INPUTTEST()
 {
   // Read UD-USB's button states
   // First set
-  btnStart = !PIN_READ(PIND, 2);
-  btnSelect = !PIN_READ(PIND, 3);
-  btnRight = !PIN_READ(PIND, 4);
-  btnLeft = !PIN_READ(PIND, 5);
-  btnDown = !PIN_READ(PIND, 6);
-  btnUp = !PIN_READ(PIND, 7);
+  READ_PIN_TO_VAR(btnStart,  PIND, 2);
+  READ_PIN_TO_VAR(btnSelect, PIND, 3);
+  READ_PIN_TO_VAR(btnRight,  PIND, 4);
+  READ_PIN_TO_VAR(btnLeft,   PIND, 5);
+  READ_PIN_TO_VAR(btnDown,   PIND, 6);
+  READ_PIN_TO_VAR(btnUp,     PIND, 7);
 
   // Second set
-  btnP1 = !PIN_READ(PINB, 0);
-  btnP2 = !PIN_READ(PINB, 1);
-  btnP3 = !PIN_READ(PINB, 2);
-  btnK1 = !PIN_READ(PINB, 3);
-  btnK2 = !PIN_READ(PINB, 4);
-  btnK3 = !PIN_READ(PINB, 5);
+  READ_PIN_TO_VAR(btnP1, PINB, 0);
+  READ_PIN_TO_VAR(btnP2, PINB, 1);
+  READ_PIN_TO_VAR(btnP3, PINB, 2);
+  READ_PIN_TO_VAR(btnK1, PINB, 3);
+  READ_PIN_TO_VAR(btnK2, PINB, 4);
+  READ_PIN_TO_VAR(btnK3, PINB, 5);
 
   // Third set
-  btnHome = !PIN_READ(PINC, 3);
-  btnP4 = !PIN_READ(PINC, 4);
-  btnK4 = !PIN_READ(PINC, 5);
+  READ_PIN_TO_VAR(btnHome, PINC, 3);
+  READ_PIN_TO_VAR(btnP4,   PINC, 4);
+  READ_PIN_TO_VAR(btnK4,   PINC, 5);
 
   // Output!
   tempVar = 0;
-  if (btnStart) {
-    Serial.println("Start");
-    tempVar = 1;
-  }
-  if (btnSelect) {
-    Serial.println("Select");
-    tempVar = 1;
-  }
-  if (btnRight) {
-    Serial.println("Right");
-    tempVar = 1;
-  }
-  if (btnLeft) {
-    Serial.println("Left");
-    tempVar = 1;
-  }
-  if (btnDown) {
-    Serial.println("Down");
-    tempVar = 1;
-  }
-  if (btnUp) {
-    Serial.println("Up");
-    tempVar = 1;
-  }
-  if (btnP1) {
-    Serial.println("P1");
-    tempVar = 1;
-  }
-  if (btnP2) {
-    Serial.println("P2");
-    tempVar = 1;
-  }
-  if (btnP3) {
-    Serial.println("P3");
-    tempVar = 1;
-  }
-  if (btnK1) {
-    Serial.println("K1");
-    tempVar = 1;
-  }
-  if (btnK2) {
-    Serial.println("K2");
-    tempVar = 1;
-  }
-  if (btnK3) {
-    Serial.println("K3");
-    tempVar = 1;
-  }
-  if (btnHome) {
-    Serial.println("Home");
-    tempVar = 1;
-  }
-  if (btnP4) {
-    Serial.println("P4");
-    tempVar = 1;
-  }
-  if (btnK4) {
-    Serial.println("K4");
-    tempVar = 1;
-  }
-  if (!tempVar) {
-    Serial.println("...");
-  }
+  BTN_TEST_PRINT(btnStart,  "Start",  tempVar);
+  BTN_TEST_PRINT(btnSelect, "Select", tempVar);
+  BTN_TEST_PRINT(btnRight,  "Right",  tempVar);
+  BTN_TEST_PRINT(btnLeft,   "Left",   tempVar);
+  BTN_TEST_PRINT(btnDown,   "Down",   tempVar);
+  BTN_TEST_PRINT(btnUp,     "Up",     tempVar);
+  BTN_TEST_PRINT(btnP1,     "P1",     tempVar);
+  BTN_TEST_PRINT(btnP2,     "P2",     tempVar);
+  BTN_TEST_PRINT(btnP3,     "P3",     tempVar);
+  BTN_TEST_PRINT(btnP4,     "P4",     tempVar);
+  BTN_TEST_PRINT(btnK1,     "K1",     tempVar);
+  BTN_TEST_PRINT(btnK2,     "K2",     tempVar);
+  BTN_TEST_PRINT(btnK3,     "K3",     tempVar);
+  BTN_TEST_PRINT(btnK4,     "K4",     tempVar);
+  BTN_TEST_PRINT(btnHome,   "Home",   tempVar);
+
+  // Else, just show "...", so that we know time has passed in the console.
+  BTN_TEST_PRINT(!tempVar, "...", tempVar);
 }
 
 inline void loop_SNES()
