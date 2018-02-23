@@ -21,11 +21,11 @@
 #define PINB_READ( pin ) (PINB&(1<<(pin)))
 
 // Not sure why the first one doesn't work...
-//#define PINC_WRITE( pin, val )  (PORTC = PORTC | ((val)<<(pin)))
-#define PINC_WRITE( pin, val )  if (val) { (PORTC = PORTC | (1<<(pin))); } else { (PORTC = PORTC & (~(1<<(pin)))); }
+//#define PIND_WRITE( pin, val )  (PORTD = PORTD | ((val)<<(pin)))
+#define PIND_WRITE( pin, val )  if (val) { (PORTD = PORTD | (1<<(pin))); } else { (PORTD = PORTD & (~(1<<(pin)))); }
 
-#define WAIT_FALLING_EDGE_PINC( pin ) while( !PINC_READ(pin) ); while( PINC_READ(pin) );
-#define WAIT_RISING_EDGE_PINC( pin ) while( PINC_READ(pin) ); while( !PINC_READ(pin) );
+#define WAIT_FALLING_EDGE_PIND( pin ) while( !PIND_READ(pin) ); while( PIND_READ(pin) );
+#define WAIT_RISING_EDGE_PIND( pin ) while( PIND_READ(pin) ); while( !PIND_READ(pin) );
 
 // Perform a pin read into a variable. Inverts, since SNES and UD-USB are both low-active.
 #define READ_PIND_TO_VAR( var, pin ) var = !PIND_READ(pin);
@@ -36,13 +36,12 @@
 #define BTN_TEST_PRINT(cond, btn, flag) if (cond) { Serial.println(btn); flag=1; }
 
 // Send a signal for a button read from a given pin
-#define SEND_PIND_BTN( pin ) do{ *rawDataPtr = PIND_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
-#define SEND_PINB_BTN( pin ) do{ *rawDataPtr = PINB_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
-#define SEND_PINC_BTN( pin ) do{ *rawDataPtr = PINC_READ(pin); PINC_WRITE(0, *rawDataPtr); rawDataPtr++; } while(false)
+#define SEND_PIND_BTN( pin ) do{ *rawDataPtr = PIND_READ(pin); PIND_WRITE(4, *rawDataPtr); rawDataPtr++; } while(false)
+#define SEND_PINB_BTN( pin ) do{ *rawDataPtr = PINB_READ(pin); PIND_WRITE(4, *rawDataPtr); rawDataPtr++; } while(false)
+#define SEND_PINC_BTN( pin ) do{ *rawDataPtr = PINC_READ(pin); PIND_WRITE(4, *rawDataPtr); rawDataPtr++; } while(false)
 
 // Send a signal for a button that doesn't exist (the SNES has 4, all set to HIGH)
-#define SEND_UNUSED_BTN( val )   do{ *rawDataPtr++ = 0; PINC_WRITE(0, val); } while(false)
-
+#define SEND_UNUSED_BTN( val )   do{ *rawDataPtr++ = 0; PIND_WRITE(4, val); } while(false)
 
 // Used as part of the input test
 int tempVar = 0;
@@ -76,9 +75,9 @@ unsigned char rawData[ 128 ];
 
 void setup()
 {
-   DDRD = B00000010; // Digital 0 to 7
+   DDRD = B00010010; // Digital 0 to 7
    DDRB = B00000000; // Digital 8 to 13
-   DDRC = B00000001; // Analog 0 to 5
+   DDRC = B00000000; // Analog 0 to 5
 
    Serial.begin( 115200 );
 }
@@ -87,25 +86,22 @@ inline void loop_INPUTTEST()
 {
   // Read UD-USB's button states
   // First set
-  READ_PIND_TO_VAR(btnStart,  2);
-  READ_PIND_TO_VAR(btnSelect, 3);
-  READ_PIND_TO_VAR(btnRight,  4);
-  READ_PIND_TO_VAR(btnLeft,   5);
-  READ_PIND_TO_VAR(btnDown,   6);
-  READ_PIND_TO_VAR(btnUp,     7);
+  READ_PIND_TO_VAR(btnStart,  5);
+  READ_PIND_TO_VAR(btnSelect, 6);
+  READ_PIND_TO_VAR(btnRight,  7);
 
   // Second set
-  READ_PINB_TO_VAR(btnP1, 0);
-  READ_PINB_TO_VAR(btnP2, 1);
-  READ_PINB_TO_VAR(btnP3, 2);
-  READ_PINB_TO_VAR(btnK1, 3);
-  READ_PINB_TO_VAR(btnK2, 4);
-  READ_PINB_TO_VAR(btnK3, 5);
+  READ_PINB_TO_VAR(btnLeft,   3);
+  READ_PINB_TO_VAR(btnDown,   4);
+  READ_PINB_TO_VAR(btnUp,     5);
 
   // Third set
-  READ_PINC_TO_VAR(btnHome, 3);
-  READ_PINC_TO_VAR(btnP4,   4);
-  READ_PINC_TO_VAR(btnK4,   5);
+  READ_PINC_TO_VAR(btnP1, 0);
+  READ_PINC_TO_VAR(btnP2, 1);
+  READ_PINC_TO_VAR(btnP3, 2);
+  READ_PINC_TO_VAR(btnP4, 3);
+  READ_PINC_TO_VAR(btnK1, 4);
+  READ_PINC_TO_VAR(btnK2, 5);
 
   // Output!
   tempVar = 0;
@@ -121,9 +117,6 @@ inline void loop_INPUTTEST()
   BTN_TEST_PRINT(btnP4,     "P4",     tempVar);
   BTN_TEST_PRINT(btnK1,     "K1",     tempVar);
   BTN_TEST_PRINT(btnK2,     "K2",     tempVar);
-  BTN_TEST_PRINT(btnK3,     "K3",     tempVar);
-  BTN_TEST_PRINT(btnK4,     "K4",     tempVar);
-  BTN_TEST_PRINT(btnHome,   "Home",   tempVar);
 
   // Else, just show "...", so that we know time has passed in the console.
   BTN_TEST_PRINT(!tempVar, "...", tempVar);
@@ -136,7 +129,7 @@ inline void loop_SNES()
   noInterrupts();
   
   // Each cycle starts with latch
-  WAIT_FALLING_EDGE_PINC( 1 );
+  WAIT_FALLING_EDGE_PIND( 3 );
 
   // Now there are 16 clock pulses
   // Controller writes data on the rising edge, and SNES samples on the falling
@@ -145,65 +138,65 @@ inline void loop_SNES()
 
   // The very first button is driven at the falling edge of latch
   // Button: B
-  SEND_PINB_BTN(3);
+  SEND_PINC_BTN(4);
 
   // Next buttons wait for rising edge of clock.
   // Button: Y
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PINB_BTN(0);
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINC_BTN(0);
 
   // Button: Select
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PIND_BTN(3);
-
-  // Button: Start
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PIND_BTN(2);
-
-  // Button: Up
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PIND_BTN(7);
-
-  // Button: Down
-  WAIT_RISING_EDGE_PINC( 2 );
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_PIND_BTN(6);
 
-  // Button: Left
-  WAIT_RISING_EDGE_PINC( 2 );
+  // Button: Start
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_PIND_BTN(5);
 
-  // Button: Right
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PIND_BTN(4);
+  // Button: Up
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINB_BTN(5);
 
-  // Button: A
-  WAIT_RISING_EDGE_PINC( 2 );
+  // Button: Down
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_PINB_BTN(4);
 
+  // Button: Left
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINB_BTN(3);
+
+  // Button: Right
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PIND_BTN(7);
+
+  // Button: A
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINC_BTN(5);
+
   // Button: X
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PINB_BTN(1);
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINC_BTN(1);
 
   // Button: L
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PINC_BTN(4);
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINC_BTN(3);
 
   // Button: R
-  WAIT_RISING_EDGE_PINC( 2 );
-  SEND_PINB_BTN(2);
+  WAIT_RISING_EDGE_PIND( 2 );
+  SEND_PINC_BTN(2);
 
   // Not used (always high)
-  WAIT_RISING_EDGE_PINC( 2 );
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_UNUSED_BTN( HIGH );
-  WAIT_RISING_EDGE_PINC( 2 );
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_UNUSED_BTN( HIGH );
-  WAIT_RISING_EDGE_PINC( 2 );
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_UNUSED_BTN( HIGH );
-  WAIT_RISING_EDGE_PINC( 2 );
+  WAIT_RISING_EDGE_PIND( 2 );
   SEND_UNUSED_BTN( HIGH );
 
   // Done; drive serial pin low until next cycle.
-  PINC_WRITE(0, LOW);
+  PIND_WRITE(4, LOW);
 
   interrupts();
 
