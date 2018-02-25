@@ -1,4 +1,5 @@
 # UDusbSpy
 UD-USB + Nintendo Spy functionality
 
-TODO: Setup instructions
+More information on the Wiki:
+https://github.com/sorlok/UDusbSpy/wiki
